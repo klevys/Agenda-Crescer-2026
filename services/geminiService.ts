@@ -1,14 +1,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Helper to instantiate the client with the current API key
+// Creating instance inside function ensures it picks up the key after user selection
 const getAiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// 1. Fast Response (Flash Lite)
+// 1. Fast Response (Standard Flash)
 export const getQuickInfo = async (prompt: string) => {
   try {
     const ai = getAiClient();
     const response = await ai.models.generateContent({
-      model: 'gemini-flash-lite-latest',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         systemInstruction: "You are a helpful assistant for Igreja Batista Crescer. Provide extremely concise, one-sentence summaries or answers.",
@@ -17,20 +18,14 @@ export const getQuickInfo = async (prompt: string) => {
     return response.text;
   } catch (error) {
     console.error("Fast AI Error:", error);
-    return "Não foi possível obter a informação rápida.";
+    // Return null to allow UI to handle empty state or retry
+    return null;
   }
 };
 
 // 2. Chatbot (Pro)
 export const getChatResponse = async (history: {role: string, parts: {text: string}[]}[], message: string) => {
   try {
-    // We construct a chat session manually or use the chat API. 
-    // Using generateContent with history is often stateless and easier for simple implementations, 
-    // but here we use the Chat API for better context management if we were persisting the object, 
-    // but since we pass history in, let's just use generateContent for simplicity with the full history as context 
-    // OR use the proper chat method if we kept the instance. 
-    // Let's use the Chat API properly.
-    
     const ai = getAiClient();
     const chat = ai.chats.create({
       model: 'gemini-3-pro-preview',
@@ -48,7 +43,7 @@ export const getChatResponse = async (history: {role: string, parts: {text: stri
   }
 };
 
-// 3. Adventure Game Logic (Pro)
+// 3. Adventure Game Logic (Pro) - Kept for reference if re-enabled later
 export const generateNextScene = async (
   history: string[], 
   currentInventory: any[], 
@@ -57,23 +52,12 @@ export const generateNextScene = async (
 ) => {
   try {
     const prompt = `
-      You are the dungeon master of a text-based adventure game set in a fantasy world with themes of spiritual growth (matching the church themes: Cultivate, Care, Grow, Celebrate).
-      
-      Context:
-      ${history.slice(-3).join('\n')}
-      
+      You are the dungeon master of a text-based adventure game set in a fantasy world with themes of spiritual growth.
+      Context: ${history.slice(-3).join('\n')}
       Current Inventory: ${JSON.stringify(currentInventory)}
       Current Quest: ${JSON.stringify(currentQuest)}
-      
       User Action: ${userChoice}
-
-      Generate the next scene. 
-      - Describe what happens vividly.
-      - Update the inventory if items are found or used.
-      - Update the quest status if changed.
-      - Provide 2-3 distinct choices for the user.
-      
-      Return ONLY JSON.
+      Generate the next scene, update inventory/quest, and provide choices. Return JSON.
     `;
 
     const ai = getAiClient();
@@ -86,10 +70,7 @@ export const generateNextScene = async (
           type: Type.OBJECT,
           properties: {
             sceneText: { type: Type.STRING },
-            choices: { 
-              type: Type.ARRAY, 
-              items: { type: Type.STRING } 
-            },
+            choices: { type: Type.ARRAY, items: { type: Type.STRING } },
             inventoryUpdate: {
               type: Type.ARRAY,
               items: {
@@ -129,7 +110,7 @@ export const generateSceneImage = async (sceneDescription: string, size: '1K' | 
       model: 'gemini-3-pro-image-preview',
       contents: {
         parts: [
-          { text: `A digital art style illustration of: ${sceneDescription}. High fantasy, warm lighting, consistent character design.` }
+          { text: `A digital art style illustration of: ${sceneDescription}. High fantasy, warm lighting.` }
         ]
       },
       config: {
@@ -140,7 +121,6 @@ export const generateSceneImage = async (sceneDescription: string, size: '1K' | 
       }
     });
 
-    // Extract image
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
         return `data:image/png;base64,${part.inlineData.data}`;
@@ -149,6 +129,6 @@ export const generateSceneImage = async (sceneDescription: string, size: '1K' | 
     return null;
   } catch (error) {
     console.error("Image Gen Error:", error);
-    return null; // Return null on failure so UI shows placeholder
+    return null;
   }
 };

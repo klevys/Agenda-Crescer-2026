@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AGENDA_DATA } from '../constants';
-import { Calendar, Info, Clock } from 'lucide-react';
+import { Info, Clock } from 'lucide-react';
 import { getQuickInfo } from '../services/geminiService';
 
 export const Agenda: React.FC = () => {
@@ -10,7 +10,11 @@ export const Agenda: React.FC = () => {
   useEffect(() => {
     const fetchQuickInfo = async () => {
         const info = await getQuickInfo("Qual é o próximo grande evento da igreja Crescer baseado na agenda de 2026? Responda em uma frase curta.");
-        if (info) setQuickStats(info);
+        if (info) {
+          setQuickStats(info);
+        } else {
+          setQuickStats("Bem-vindo à Agenda 2026!");
+        }
     };
     fetchQuickInfo();
   }, []);
