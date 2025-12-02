@@ -34,7 +34,7 @@ const App: React.FC = () => {
                 {/* ==================== */}
 
                 <p className="text-gray-500 font-medium max-w-lg mx-auto">
-                    Conectando propósitos, celebrando a vida.
+                    Uma comunidade de amor multiplicadora discílos de Jesus.
                 </p>
             </div>
         </header>
