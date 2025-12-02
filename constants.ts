@@ -112,7 +112,7 @@ export const AGENDA_DATA: Season[] = [
     ]
   },
   {
-    name: 'CELEBRAR',
+    name: 'CELEBRAÇÃO',
     color: 'bg-red-100 text-red-800 border-red-200',
     description: 'Tempo de gratidão e festa.',
     months: [
