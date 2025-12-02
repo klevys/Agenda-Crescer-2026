@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getChatResponse } from '../services/geminiService';
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, AlertCircle } from 'lucide-react';
 import { ChatMessage } from '../types';
 
 export const ChatBot: React.FC = () => {
@@ -10,6 +10,7 @@ export const ChatBot: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const toggleChat = () => setIsOpen(!isOpen);
@@ -18,41 +19,54 @@ export const ChatBot: React.FC = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
+  }, [messages, error, isLoading]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    setError(null);
+    const userText = input;
+    
+    // Create User Message
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      text: input,
+      text: userText,
       timestamp: new Date()
     };
 
+    // Update UI immediately
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
 
     try {
-      // Convert internal format to Gemini history format
+      // Prepare history from CURRENT state (excluding the message we just added to UI, 
+      // but including previous ones).
+      // Note: Because setState is async, 'messages' here still holds the old list, 
+      // which is exactly what we want for 'history' (previous context).
       const history = messages.map(m => ({
           role: m.role,
           parts: [{ text: m.text }]
       }));
 
-      const responseText = await getChatResponse(history, userMsg.text);
+      const responseText = await getChatResponse(history, userText);
 
-      const botMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'model',
-        text: responseText,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, botMsg]);
+      if (responseText) {
+        const botMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'model',
+          text: responseText,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botMsg]);
+      } else {
+        throw new Error("Resposta vazia da IA");
+      }
     } catch (err) {
       console.error(err);
+      setError("Não foi possível conectar. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -105,6 +119,7 @@ export const ChatBot: React.FC = () => {
                 </div>
               </div>
             ))}
+            
             {isLoading && (
                <div className="flex gap-2 items-center text-gray-400 text-xs ml-10">
                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
@@ -112,6 +127,14 @@ export const ChatBot: React.FC = () => {
                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></span>
                </div>
             )}
+
+            {error && (
+              <div className="flex items-center gap-2 justify-center text-red-500 text-xs bg-red-50 p-2 rounded-lg">
+                <AlertCircle size={14} />
+                <span>{error}</span>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
 

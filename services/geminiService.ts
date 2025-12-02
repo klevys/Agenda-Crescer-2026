@@ -23,12 +23,12 @@ export const getQuickInfo = async (prompt: string) => {
   }
 };
 
-// 2. Chatbot (Pro)
+// 2. Chatbot (Flash - More Stable)
 export const getChatResponse = async (history: {role: string, parts: {text: string}[]}[], message: string) => {
   try {
     const ai = getAiClient();
     const chat = ai.chats.create({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-2.5-flash', // Switched to flash for stability
       history: history,
       config: {
         systemInstruction: "You are a warm, welcoming, and knowledgeable assistant for Igreja Batista Crescer. You help members find events in the 2026 agenda and answer spiritual questions.",
@@ -39,7 +39,7 @@ export const getChatResponse = async (history: {role: string, parts: {text: stri
     return result.text;
   } catch (error) {
     console.error("Chat Error:", error);
-    return "Desculpe, tive um problema ao processar sua mensagem. Tente novamente.";
+    throw error; // Throw to let component handle UI
   }
 };
 
