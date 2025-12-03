@@ -14,6 +14,7 @@ export interface Season {
   color: string;
   months: MonthData[];
   description: string;
+  imageUrl: string;
 }
 
 export interface ChatMessage {
